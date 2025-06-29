@@ -1,0 +1,12 @@
+# Example configuration file for the CLI tool
+app_name: "CLI Tool Skeleton"
+version: "1.0.0"
+log_level: "INFO"
+output_format: "text"
+color_output: true
+
+# Custom settings
+settings:
+  default_name: "World"
+  api_timeout: 30
+  max_retries: 3 
