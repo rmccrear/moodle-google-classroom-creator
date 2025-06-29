@@ -1,4 +1,6 @@
 import json
+import os
+from datetime import datetime
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -58,7 +60,41 @@ def create_assignment(service, course_id, title, description, topic_id):
     }
     return service.courses().courseWork().create(courseId=course_id, body=coursework).execute()
 
-# 6. Main Logic
+# 6. Record Course Data
+def record_course_data(course_id, course_name, topics_count, assignments_count, source_file):
+    # Ensure class_data directory exists
+    os.makedirs('class_data', exist_ok=True)
+    
+    # Load existing data or create new
+    courses_file = 'class_data/courses.json'
+    if os.path.exists(courses_file):
+        with open(courses_file, 'r', encoding='utf-8') as f:
+            courses_data = json.load(f)
+    else:
+        courses_data = {'courses': []}
+    
+    # Create new course record
+    course_record = {
+        'id': course_id,
+        'name': course_name,
+        'created_at': datetime.now().isoformat(),
+        'topics_count': topics_count,
+        'assignments_count': assignments_count,
+        'source_file': source_file,
+        'classroom_url': f"https://classroom.google.com/c/{course_id}",
+        'status': 'active'
+    }
+    
+    # Add to courses list
+    courses_data['courses'].append(course_record)
+    
+    # Save updated data
+    with open(courses_file, 'w', encoding='utf-8') as f:
+        json.dump(courses_data, f, ensure_ascii=False, indent=2)
+    
+    print(f"📝 Course record saved to {courses_file}")
+
+# 7. Main Logic
 def import_course(filepath='course.json'):
     service = authenticate()
     course_data = load_course_data(filepath)
@@ -66,8 +102,12 @@ def import_course(filepath='course.json'):
     course_id = create_course(service, course_data['course_name'])
     print(f"Created course: {course_data['course_name']}")
 
+    topics_count = 0
+    assignments_count = 0
+    
     for topic in course_data['topics']:
         topic_obj = create_topic(service, course_id, topic['name'])
+        topics_count += 1
         print(f"  Topic: {topic['name']}")
         for assignment in topic['assignments']:
             create_assignment(
@@ -77,7 +117,21 @@ def import_course(filepath='course.json'):
                 assignment['description'],
                 topic_obj['topicId']
             )
+            assignments_count += 1
             print(f"    Added assignment: {assignment['title']}")
+    
+    # Record the course data
+    record_course_data(
+        course_id, 
+        course_data['course_name'], 
+        topics_count, 
+        assignments_count,
+        filepath
+    )
+    
+    print(f"\n🎉 Course import completed!")
+    print(f"📊 Summary: {topics_count} topics, {assignments_count} assignments")
+    print(f"🔗 Classroom URL: https://classroom.google.com/c/{course_id}")
 
 if __name__ == '__main__':
     import sys
