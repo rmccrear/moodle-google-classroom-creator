@@ -71,8 +71,40 @@ def create_course(service, name):
         return course['id'], unique_name
 
 # 4. Create Topics
+def sanitize_topic_name(name):
+    """Sanitize topic name for Google Classroom by removing invalid characters"""
+    # Handle None or empty names
+    if not name:
+        return "Untitled Topic"
+    
+    # Remove or replace characters that cause issues in Google Classroom
+    # Remove parentheses, brackets, and other special characters
+    sanitized = name.replace('(', '').replace(')', '')
+    sanitized = sanitized.replace('[', '').replace(']', '')
+    sanitized = sanitized.replace('{', '').replace('}', '')
+    sanitized = sanitized.replace('<', '').replace('>', '')
+    sanitized = sanitized.replace('&', 'and')
+    sanitized = sanitized.replace('|', '-')
+    sanitized = sanitized.replace(':', ' -')
+    sanitized = sanitized.replace(';', '')
+    sanitized = sanitized.replace('"', '').replace("'", '')
+    sanitized = sanitized.replace('/', ' - ')
+    sanitized = sanitized.replace('\\', ' - ')
+    
+    # Remove extra spaces and trim
+    sanitized = ' '.join(sanitized.split())
+    
+    # Ensure the name isn't too long (Google Classroom has limits)
+    if len(sanitized) > 100:
+        sanitized = sanitized[:97] + "..."
+    
+    return sanitized
+
 def create_topic(service, course_id, topic_name):
-    topic = {'name': topic_name}
+    """Create a topic in the course"""
+    topic = {
+        'name': sanitize_topic_name(topic_name)
+    }
     return service.courses().topics().create(courseId=course_id, body=topic).execute()
 
 # 5. Create Assignments

@@ -30,19 +30,25 @@ def parse_mbz(mbz_path):
         sections = []
         section_map = {}
         section_dir = os.path.join(tmpdir, 'sections')
+        
+        # First pass: collect section sequences and basic info
+        section_sequences = {}
         for folder in sorted(os.listdir(section_dir)):
             xml_path = os.path.join(section_dir, folder, 'section.xml')
             tree = etree.parse(xml_path)
             section_id = tree.findtext('.//sectionid')
             title = tree.findtext('.//title') or tree.findtext('.//summary')
-            if title:
+            sequence = tree.findtext('.//sequence')
+            
+            if title and title != '$@NULL@$':
                 # Preserve HTML formatting instead of stripping it
                 title = title.strip()
             else:
-                title = f"Section {folder[-3:]}"
-            section_map[section_id] = {'name': title, 'assignments': []}
-            sections.append(section_map[section_id])
-
+                title = None  # Will try to derive from activities later
+            section_map[folder] = {'name': title, 'assignments': [], 'sequence': sequence, 'section_id': section_id}
+            section_sequences[folder] = sequence
+            sections.append(section_map[folder])
+        
         # 3. Load assignments
         activity_dir = os.path.join(tmpdir, 'activities')
         for folder in os.listdir(activity_dir):
@@ -54,22 +60,42 @@ def parse_mbz(mbz_path):
                 title = tree.findtext('.//name')
                 desc = tree.findtext('.//intro')
                 if desc:
-                    # Preserve HTML formatting instead of stripping it
                     desc = desc.strip()
                 else:
                     desc = ""
-                section_id = tree.findtext('.//sectionid')
-                assignment = {'title': title.strip(), 'description': desc}
-                if section_id and section_id in section_map:
-                    section_map[section_id]['assignments'].append(assignment)
-                else:
-                    sections[0]['assignments'].append(assignment)  # fallback
+                
+                # Extract assignment ID from folder name (e.g., "assign_2835" -> "2835")
+                assignment_id = folder.replace('assign_', '')
+                
+                # Find which section contains this assignment using the sequence field
+                section_folder = None
+                for f, s in section_map.items():
+                    if s['sequence'] and assignment_id in s['sequence'].split(','):
+                        section_folder = f
+                        break
+                
+                if section_folder:
+                    assignment = {'title': title.strip(), 'description': desc}
+                    section_map[section_folder]['assignments'].append(assignment)
 
-        # 4. Final output
-        return {
+        # 4. Assign names to sections with no name
+        for section in sections:
+            if not section['name']:
+                if section['assignments']:
+                    # Use the first assignment title as the section name
+                    section['name'] = section['assignments'][0]['title']
+                else:
+                    section['name'] = 'Untitled Section'
+
+        # 5. Prepare output
+        output = {
             'course_name': course_name,
-            'topics': sections
+            'topics': [
+                {'name': s['name'], 'assignments': s['assignments']} for s in sections if s['assignments'] or s['name']
+            ]
         }
+
+        return output
 
 def write_json(data, output_file='course.json'):
     with open(output_file, 'w', encoding='utf-8') as f:
