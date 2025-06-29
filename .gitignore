@@ -167,6 +167,7 @@ logs/
 output/
 temp/
 tmp/
+temp_data/
 .cache/
 
 # Configuration files with secrets
