@@ -3,6 +3,8 @@ import os
 from datetime import datetime
 from googleapiclient.discovery import build
 from auth_cache import get_cached_credentials
+import re
+from bs4 import BeautifulSoup
 
 # Helper function to get unique course name
 def get_unique_course_name(service, base_name):
@@ -74,7 +76,109 @@ def create_topic(service, course_id, topic_name):
     return service.courses().topics().create(courseId=course_id, body=topic).execute()
 
 # 5. Create Assignments
+def convert_html_for_classroom(html):
+    """
+    Convert HTML to plain text with Markdown-style formatting that Google Classroom will display.
+    - Headings -> ALL CAPS with line breaks
+    - Bold -> **text**
+    - Italic -> *text*
+    - Lists -> - item
+    - Tables -> simple text format
+    - Links -> [text](url)
+    - Code -> `code`
+    """
+    soup = BeautifulSoup(html, 'html.parser')
+    
+    # Convert headings to ALL CAPS with line breaks
+    for tag in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+        tag.string = f"\n\n{tag.get_text(strip=True).upper()}\n\n"
+        tag.name = 'p'
+    
+    # Convert <strong> and <b> to **text**
+    for tag in soup.find_all(['strong', 'b']):
+        tag.string = f"**{tag.get_text(strip=True)}**"
+        tag.name = 'span'
+    
+    # Convert <em> and <i> to *text*
+    for tag in soup.find_all(['em', 'i']):
+        tag.string = f"*{tag.get_text(strip=True)}*"
+        tag.name = 'span'
+    
+    # Convert <u> to _text_
+    for tag in soup.find_all('u'):
+        tag.string = f"_{tag.get_text(strip=True)}_"
+        tag.name = 'span'
+    
+    # Convert <code> to `code`
+    for tag in soup.find_all('code'):
+        tag.string = f"`{tag.get_text(strip=True)}`"
+        tag.name = 'span'
+    
+    # Convert <pre> to code blocks
+    for tag in soup.find_all('pre'):
+        tag.string = f"\n```\n{tag.get_text(strip=True)}\n```\n"
+        tag.name = 'p'
+    
+    # Convert <hr> to dashed line
+    for tag in soup.find_all('hr'):
+        tag.string = "\n\n---\n\n"
+        tag.name = 'p'
+    
+    # Convert tables to simple text format
+    for table in soup.find_all('table'):
+        table_text = "\n"
+        for row in table.find_all('tr'):
+            row_text = " | ".join(cell.get_text(strip=True) for cell in row.find_all(['td', 'th']))
+            table_text += row_text + "\n"
+        table.string = table_text
+        table.name = 'p'
+    
+    # Convert <ul> and <ol> to Markdown lists
+    for tag in soup.find_all(['ul', 'ol']):
+        list_items = []
+        for li in tag.find_all('li'):
+            list_items.append(f"- {li.get_text(strip=True)}")
+        tag.string = "\n" + "\n".join(list_items) + "\n"
+        tag.name = 'p'
+    
+    # Convert <a> to [text](url)
+    for tag in soup.find_all('a'):
+        href = tag.get('href', '')
+        text = tag.get_text(strip=True)
+        if href:
+            tag.string = f"[{text}]({href})"
+        else:
+            tag.string = text
+        tag.name = 'span'
+    
+    # Convert <p> to plain text with line breaks
+    for tag in soup.find_all('p'):
+        if tag.get_text(strip=True):
+            tag.string = tag.get_text(strip=True) + "\n\n"
+    
+    # Convert <br> to line breaks
+    for tag in soup.find_all('br'):
+        tag.string = "\n"
+        tag.name = 'span'
+    
+    # Remove all other tags but keep their content
+    for tag in soup.find_all(True):
+        if tag.name not in ['p', 'span']:
+            tag.unwrap()
+    
+    # Get the final text and clean it up
+    text = soup.get_text()
+    
+    # Clean up extra whitespace and line breaks
+    text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)  # Remove excessive line breaks
+    text = re.sub(r' +', ' ', text)  # Remove excessive spaces
+    text = text.strip()
+    
+    return text
+
 def create_assignment(service, course_id, title, description, topic_id):
+    # Convert description HTML to supported format
+    description = convert_html_for_classroom(description)
     coursework = {
         'title': title,
         'description': description,
