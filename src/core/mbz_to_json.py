@@ -3,6 +3,8 @@ import tarfile
 import os
 import tempfile
 import json
+from datetime import datetime
+from pathlib import Path
 from lxml import etree
 
 def parse_mbz(mbz_path):
@@ -34,8 +36,8 @@ def parse_mbz(mbz_path):
             section_id = tree.findtext('.//sectionid')
             title = tree.findtext('.//title') or tree.findtext('.//summary')
             if title:
-                html_elem = etree.HTML(title)
-                title = ''.join(html_elem.itertext()).strip() if html_elem is not None else ''
+                # Preserve HTML formatting instead of stripping it
+                title = title.strip()
             else:
                 title = f"Section {folder[-3:]}"
             section_map[section_id] = {'name': title, 'assignments': []}
@@ -52,8 +54,8 @@ def parse_mbz(mbz_path):
                 title = tree.findtext('.//name')
                 desc = tree.findtext('.//intro')
                 if desc:
-                    html_elem = etree.HTML(desc)
-                    desc = ''.join(html_elem.itertext()).strip() if html_elem is not None else ''
+                    # Preserve HTML formatting instead of stripping it
+                    desc = desc.strip()
                 else:
                     desc = ""
                 section_id = tree.findtext('.//sectionid')
@@ -73,6 +75,26 @@ def write_json(data, output_file='course.json'):
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+def write_json_to_imports(data, course_name):
+    """Write JSON data to class_data/imports directory with timestamp and course name"""
+    # Create imports directory if it doesn't exist
+    imports_dir = Path('class_data/imports')
+    imports_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create filename with timestamp and sanitized course name
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    # Sanitize course name for filename (remove special characters)
+    safe_course_name = "".join(c for c in course_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_course_name = safe_course_name.replace(' ', '_')
+    
+    filename = f"{timestamp}_{safe_course_name}.json"
+    output_path = imports_dir / filename
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    
+    return output_path
+
 if __name__ == '__main__':
     import sys
     if len(sys.argv) < 2:
@@ -81,5 +103,11 @@ if __name__ == '__main__':
 
     mbz_file = sys.argv[1]
     course_data = parse_mbz(mbz_file)
+    
+    # Save to imports directory
+    output_path = write_json_to_imports(course_data, course_data['course_name'])
+    print(f"✅ Course data saved to: {output_path}")
+    
+    # Also save as course.json for backward compatibility
     write_json(course_data)
-    print("✅ course.json created.")
+    print("✅ course.json created (for backward compatibility).")

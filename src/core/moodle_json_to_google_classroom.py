@@ -4,6 +4,38 @@ from datetime import datetime
 from googleapiclient.discovery import build
 from auth_cache import get_cached_credentials
 
+# Helper function to get unique course name
+def get_unique_course_name(service, base_name):
+    """Check if course name exists and return a unique name with number suffix if needed"""
+    try:
+        # Get all courses
+        courses = service.courses().list().execute()
+        
+        if 'courses' not in courses:
+            return base_name
+        
+        existing_names = []
+        for course in courses['courses']:
+            # Only check active courses (not archived)
+            if course.get('courseState') != 'ARCHIVED':
+                existing_names.append(course['name'])
+        
+        # If base name doesn't exist, return it
+        if base_name not in existing_names:
+            return base_name
+        
+        # Find the next available number
+        counter = 1
+        while True:
+            new_name = f"{base_name} ({counter})"
+            if new_name not in existing_names:
+                return new_name
+            counter += 1
+            
+    except Exception as e:
+        print(f"Warning: Could not check existing courses: {e}")
+        return base_name
+
 # 2. Load Course Data
 def load_course_data(filepath='course.json'):
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -11,8 +43,14 @@ def load_course_data(filepath='course.json'):
 
 # 3. Create Course
 def create_course(service, name):
+    # Get unique course name
+    unique_name = get_unique_course_name(service, name)
+    
+    if unique_name != name:
+        print(f"⚠️  Course name '{name}' already exists. Using '{unique_name}' instead.")
+    
     body = {
-        'name': name,
+        'name': unique_name,
         'section': 'Imported',
         'description': 'Imported from Moodle',
         'courseState': 'PROVISIONED'
@@ -20,7 +58,7 @@ def create_course(service, name):
     
     try:
         course = service.courses().create(body=body).execute()
-        return course['id']
+        return course['id'], unique_name
     except Exception as e:
         print(f"Error creating course: {e}")
         print("Trying with ownerId='me'...")
@@ -28,7 +66,7 @@ def create_course(service, name):
         # Try with ownerId='me'
         body['ownerId'] = 'me'
         course = service.courses().create(body=body).execute()
-        return course['id']
+        return course['id'], unique_name
 
 # 4. Create Topics
 def create_topic(service, course_id, topic_name):
@@ -88,8 +126,8 @@ def import_course(filepath='course.json'):
     
     course_data = load_course_data(filepath)
     
-    course_id = create_course(service, course_data['course_name'])
-    print(f"Created course: {course_data['course_name']}")
+    course_id, course_name = create_course(service, course_data['course_name'])
+    print(f"Created course: {course_name}")
 
     topics_count = 0
     assignments_count = 0
@@ -112,7 +150,7 @@ def import_course(filepath='course.json'):
     # Record the course data
     record_course_data(
         course_id, 
-        course_data['course_name'], 
+        course_name, 
         topics_count, 
         assignments_count,
         filepath
