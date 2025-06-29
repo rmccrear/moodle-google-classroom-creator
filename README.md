@@ -1,188 +1,282 @@
-# Python CLI Tool Skeleton
+# Google Classroom Creator
 
-A well-structured skeleton for building Python command-line interface (CLI) tools with modern best practices.
+A comprehensive tool for converting Moodle course backups (.mbz files) to Google Classroom courses with support for human-readable markdown exports.
 
-## Features
+## 🚀 Features
 
-- 🚀 **Click-based CLI**: Modern command-line interface using Click
-- 🎨 **Rich Output**: Beautiful terminal output with colors and formatting
-- ⚙️ **Configuration Management**: Type-safe configuration with Pydantic
-- 📝 **Structured Logging**: Rich logging with file and console output
-- 🛠️ **Modular Design**: Clean, extensible architecture
-- 📦 **Easy Setup**: Simple installation and development workflow
+### Core Functionality
+- **Moodle to Google Classroom Conversion**: Convert Moodle backup files (.mbz) to Google Classroom courses
+- **HTML Formatting Preservation**: Maintain rich formatting in assignment descriptions
+- **Automatic Section Mapping**: Intelligently map assignments to their correct sections
+- **Unique Course Names**: Automatically append numbers to prevent naming conflicts
+- **Authentication Caching**: Stay logged in across multiple commands
 
-## Installation
+### Markdown Import/Export
+- **Human-Readable Exports**: Export courses to organized markdown structure
+- **Bidirectional Conversion**: Import markdown back to JSON format
+- **Structured Organization**: Section-based folder hierarchy with metadata
+- **Navigation Support**: Built-in navigation links between sections and assignments
 
-1. **Clone or download this skeleton**
+### Course Management
+- **Course Listing**: View all created courses with status and links
+- **Archive/Delete/Restore**: Manage course lifecycle
+- **Import Verification**: Verify that all assignments were properly imported
+- **Status Tracking**: Track course creation dates and assignment counts
+
+## 📁 Project Structure
+
+```
+google-classroom-creator/
+├── src/core/                           # Core functionality
+│   ├── mbz_to_json.py                  # Convert MBZ to JSON
+│   ├── moodle_json_to_google_classroom.py  # Import to Google Classroom
+│   ├── moodle_to_markdown.py           # Markdown import/export
+│   ├── manage_courses.py               # Course management
+│   ├── manage_auth.py                  # Authentication management
+│   ├── verify_import.py                # Import verification
+│   └── auth_cache.py                   # Credential caching
+├── class_data/                         # Course data storage
+│   ├── imports/                        # JSON course files
+│   ├── exports/                        # Markdown exports
+│   └── courses.json                    # Course tracking
+├── temp_data/                          # Temporary files
+├── cli.py                              # Command-line interface
+└── requirements.txt                    # Dependencies
+```
+
+## 🛠️ Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd google-classroom-creator
+   ```
+
 2. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Make the CLI executable**:
-   ```bash
-   chmod +x cli.py
-   ```
+3. **Set up Google API credentials**:
+   - Download `credentials.json` from Google Cloud Console
+   - Place it in the project root
+   - Add it to `.gitignore` (already included)
 
-## Usage
+## 🔧 Usage
 
-### Basic Commands
+### Command-Line Interface (Recommended)
+
+The CLI provides easy access to all features:
 
 ```bash
 # Show help
-python cli.py --help
+python cli.py
 
-# Say hello
-python cli.py hello
-python cli.py hello --name "Your Name"
+# Convert Moodle backup to JSON
+python cli.py convert temp_data/backup.mbz
 
-# Show status
-python cli.py status
+# Import JSON to Google Classroom
+python cli.py import class_data/imports/course.json
 
-# Process files
-python cli.py process --input input.txt --output output.txt
+# Export JSON to markdown
+python cli.py export class_data/imports/course.json
 
-# Enable verbose mode
-python cli.py --verbose hello
+# Import markdown back to JSON
+python cli.py import-md class_data/exports/course-folder/
+
+# List all courses
+python cli.py list-courses
+
+# Archive a course
+python cli.py archive 123456789
+
+# Verify import
+python cli.py verify 123456789
 ```
 
-### Configuration
+### Complete Workflow
 
-The tool supports configuration through:
-- Environment variables
-- Configuration files
-- Command-line options
+1. **Convert Moodle Backup**:
+   ```bash
+   python cli.py convert temp_data/backup-moodle2-course-57-nov24-lv4-20250626-0543-nu-nf.mbz
+   ```
 
-Example environment variables:
+2. **Import to Google Classroom**:
+   ```bash
+   python cli.py import class_data/imports/20250629_181517_November_Cohort_2024__-_Pathway_4.json
+   ```
+
+3. **Export to Markdown** (Optional):
+   ```bash
+   python cli.py export class_data/imports/20250629_181517_November_Cohort_2024__-_Pathway_4.json
+   ```
+
+4. **Import Markdown** (Optional):
+   ```bash
+   python cli.py import-md class_data/exports/20250629_223335_november-cohort-2024-pathway-4/
+   ```
+
+## 📖 Markdown Export Structure
+
+The markdown export creates a human-readable structure:
+
+```
+course-export/
+├── README.md                    # Main navigation
+├── course-info.md               # Course overview and metadata
+├── section-01-important-links/  # First section
+│   ├── section.md               # Moodle metadata
+│   ├── README.md                # Human-readable summary
+│   └── assignment-01-links/     # First assignment
+│       └── assignment.md        # Assignment content
+├── section-02-erd-problems/     # Second section
+│   ├── section.md
+│   ├── README.md
+│   └── assignment-01-erd/       # Assignment folder
+│       └── assignment.md
+└── ...
+```
+
+### Markdown Features
+- **Section-based organization** with numbered folders
+- **Assignment folders** with descriptive names
+- **Navigation links** between sections and assignments
+- **Metadata preservation** in separate files
+- **HTML to Markdown conversion** for readable content
+
+## 🔐 Authentication
+
+The tool uses Google Classroom API with OAuth2 authentication:
+
+1. **First-time setup**: Run any command and follow the browser authentication
+2. **Cached credentials**: Tokens are stored in `temp_data/token.pickle`
+3. **Automatic refresh**: Credentials are automatically refreshed when needed
+
+### Managing Authentication
 ```bash
-export APP_NAME="My CLI Tool"
-export LOG_LEVEL="DEBUG"
-export COLOR_OUTPUT="true"
+# Clear cached credentials
+python cli.py auth
 ```
 
-## Project Structure
+## 📊 Course Management
 
-```
-├── cli.py                 # Main CLI entry point
-├── requirements.txt       # Python dependencies
-├── README.md             # This file
-├── src/                  # Source code
-│   ├── __init__.py
-│   ├── core/            # Core functionality
-│   │   ├── __init__.py
-│   │   ├── config.py    # Configuration management
-│   │   └── logger.py    # Logging setup
-│   └── utils/           # Utility functions
-│       ├── __init__.py
-│       └── helpers.py   # Common helper functions
-└── tests/               # Test files (to be added)
+### List Courses
+```bash
+python cli.py list-courses
 ```
 
-## Development
-
-### Adding New Commands
-
-1. **Create a new command module** in `src/commands/`
-2. **Import and register** the command in `cli.py`
-3. **Add tests** in the `tests/` directory
-
-Example command:
-```python
-@cli.command()
-@click.option("--option", "-o", help="An option")
-@click.pass_context
-def my_command(ctx, option):
-    """Description of my command."""
-    # Command implementation
-    pass
+### Archive/Delete/Restore
+```bash
+python cli.py archive 123456789
+python cli.py delete 123456789
+python cli.py restore 123456789
 ```
 
-### Adding New Utilities
+### Verify Import
+```bash
+python cli.py verify 123456789
+```
 
-1. **Add utility functions** to `src/utils/helpers.py`
-2. **Import and use** in your commands
-3. **Document** the functions with docstrings
+## 🎯 Key Features Explained
 
-### Testing
+### HTML Formatting Preservation
+- Converts HTML to plain text with Markdown-style formatting
+- Preserves headings, lists, bold/italic text, links, and code blocks
+- Ensures Google Classroom compatibility
+
+### Intelligent Section Mapping
+- Uses Moodle's sequence data to map assignments to correct sections
+- Derives meaningful section names from first activity when needed
+- Handles sections with no activities gracefully
+
+### Unique Course Names
+- Automatically detects existing courses with same name
+- Appends numbers (e.g., "Course Name (1)", "Course Name (2)")
+- Prevents conflicts in Google Classroom
+
+### Markdown Export Benefits
+- **Human-readable**: Easy to browse and edit course content
+- **Version control friendly**: Markdown files work well with Git
+- **Portable**: Can be shared, edited, and re-imported
+- **Structured**: Organized folder hierarchy with navigation
+
+## 🔧 Advanced Usage
+
+### Direct Script Usage
+You can also use the individual scripts directly:
 
 ```bash
-# Run tests (when implemented)
-python -m pytest tests/
+# Convert MBZ to JSON
+python src/core/mbz_to_json.py temp_data/backup.mbz
 
-# Run with coverage
-python -m pytest --cov=src tests/
+# Import to Google Classroom
+python src/core/moodle_json_to_google_classroom.py course.json
+
+# Export to markdown
+python src/core/moodle_to_markdown.py export course.json
+
+# Import markdown
+python src/core/moodle_to_markdown.py import markdown-folder/
 ```
 
-## Configuration
+### Custom Output Directories
+```bash
+# Export to custom directory
+python cli.py export course.json /path/to/custom/export/
 
-The tool uses Pydantic for type-safe configuration. Key configuration options:
+# Import from custom directory
+python cli.py import-md /path/to/markdown/folder/
+```
 
-- `app_name`: Application name
-- `version`: Application version
-- `log_level`: Logging level (DEBUG, INFO, WARNING, ERROR)
-- `log_file`: Optional log file path
-- `output_format`: Output format (text, json, yaml)
-- `color_output`: Enable/disable colored output
+## 📝 File Formats
 
-## Logging
+### Input Formats
+- **MBZ files**: Moodle backup files (zip or tar archives)
+- **JSON files**: Course data exported from MBZ conversion
+- **Markdown folders**: Human-readable course exports
 
-The tool provides structured logging with:
-- Console output with rich formatting
-- Optional file logging
-- Configurable log levels
-- Beautiful tracebacks
+### Output Formats
+- **JSON files**: Structured course data (stored in `class_data/imports/`)
+- **Markdown folders**: Human-readable exports (stored in `class_data/exports/`)
+- **Google Classroom courses**: Live courses with topics and assignments
 
-## Dependencies
+## 🐛 Troubleshooting
 
-- **Click**: Command-line interface creation kit
-- **Rich**: Rich text and beautiful formatting in the terminal
-- **Pydantic**: Data validation using Python type annotations
-- **python-dotenv**: Environment variable management
-- **PyYAML**: YAML file support (optional)
+### Common Issues
 
-## Contributing
+1. **Authentication Errors**:
+   - Clear cached credentials: `python cli.py auth`
+   - Re-authenticate through browser
+
+2. **Course Name Conflicts**:
+   - The tool automatically handles this by appending numbers
+   - Check existing courses: `python cli.py list-courses`
+
+3. **Import Failures**:
+   - Verify the course: `python cli.py verify <course_id>`
+   - Check assignment descriptions for invalid characters
+
+4. **MBZ File Issues**:
+   - Ensure the file is a valid Moodle backup
+   - Check file permissions and path
+
+### Debug Mode
+For detailed debugging, you can run individual scripts with verbose output or examine the generated files in the `class_data/` directory.
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests
+4. Test thoroughly
 5. Submit a pull request
 
-## License
+## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Examples
+## 🙏 Acknowledgments
 
-### Custom Command Example
-
-```python
-@cli.command()
-@click.option("--file", "-f", type=click.Path(exists=True), required=True)
-@click.option("--format", type=click.Choice(["json", "yaml", "text"]), default="json")
-@click.pass_context
-def analyze(ctx, file, format):
-    """Analyze a file and display results."""
-    from src.utils.helpers import load_file, display_table
-    
-    try:
-        data = load_file(file)
-        display_table([data], title="File Analysis")
-    except Exception as e:
-        console.print(f"[red]Error analyzing file: {e}[/red]")
-```
-
-### Configuration Example
-
-```python
-# config.yaml
-app_name: "My Custom CLI"
-log_level: "DEBUG"
-output_format: "json"
-color_output: true
-settings:
-  api_key: "your-api-key"
-  base_url: "https://api.example.com"
-```
-
-This skeleton provides a solid foundation for building professional CLI tools with modern Python practices. 
+- Google Classroom API for course management
+- Moodle community for backup format documentation
+- BeautifulSoup for HTML parsing and conversion 
