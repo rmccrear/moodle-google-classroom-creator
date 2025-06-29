@@ -173,7 +173,7 @@ temp_data/
 # Configuration files with secrets
 config.json
 secrets.json
-google_client_secret.json
+credentials.json
 *.key
 *.pem
 
