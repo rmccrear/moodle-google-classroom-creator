@@ -1,21 +1,7 @@
 import json
 import os
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-
-# Setup OAuth
-SCOPES = [
-    'https://www.googleapis.com/auth/classroom.courses',
-    'https://www.googleapis.com/auth/classroom.courseworkmaterials',
-    'https://www.googleapis.com/auth/classroom.topics',
-    'https://www.googleapis.com/auth/classroom.coursework.students'
-]
-
-def authenticate():
-    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-    creds = flow.run_local_server(port=0)
-    return build('classroom', 'v1', credentials=creds)
+from auth_cache import get_cached_credentials
 
 def load_course_records():
     """Load course records from class_data/courses.json"""
@@ -33,7 +19,9 @@ def save_course_records(courses_data):
 
 def list_courses():
     """List all courses from both Google Classroom and local records"""
-    service = authenticate()
+    # Use cached credentials
+    creds = get_cached_credentials()
+    service = build('classroom', 'v1', credentials=creds)
     
     # Get courses from Google Classroom
     courses = service.courses().list().execute()
@@ -67,7 +55,9 @@ def list_courses():
 
 def archive_course(course_id):
     """Archive a course in Google Classroom"""
-    service = authenticate()
+    # Use cached credentials
+    creds = get_cached_credentials()
+    service = build('classroom', 'v1', credentials=creds)
     
     try:
         # First get the current course to preserve its name
@@ -98,7 +88,9 @@ def archive_course(course_id):
 
 def delete_course(course_id):
     """Delete a course from Google Classroom"""
-    service = authenticate()
+    # Use cached credentials
+    creds = get_cached_credentials()
+    service = build('classroom', 'v1', credentials=creds)
     
     try:
         # Delete the course
@@ -116,7 +108,9 @@ def delete_course(course_id):
 
 def restore_course(course_id):
     """Restore an archived course"""
-    service = authenticate()
+    # Use cached credentials
+    creds = get_cached_credentials()
+    service = build('classroom', 'v1', credentials=creds)
     
     try:
         # Update course state to ACTIVE

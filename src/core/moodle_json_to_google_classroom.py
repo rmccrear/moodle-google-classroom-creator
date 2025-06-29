@@ -1,22 +1,8 @@
 import json
 import os
 from datetime import datetime
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-
-# 1. Setup OAuth
-SCOPES = [
-    'https://www.googleapis.com/auth/classroom.courses',
-    'https://www.googleapis.com/auth/classroom.courseworkmaterials',
-    'https://www.googleapis.com/auth/classroom.topics',
-    'https://www.googleapis.com/auth/classroom.coursework.students'
-]
-
-def authenticate():
-    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-    creds = flow.run_local_server(port=0)
-    return build('classroom', 'v1', credentials=creds)
+from auth_cache import get_cached_credentials
 
 # 2. Load Course Data
 def load_course_data(filepath='course.json'):
@@ -96,7 +82,10 @@ def record_course_data(course_id, course_name, topics_count, assignments_count, 
 
 # 7. Main Logic
 def import_course(filepath='course.json'):
-    service = authenticate()
+    # Use cached credentials
+    creds = get_cached_credentials()
+    service = build('classroom', 'v1', credentials=creds)
+    
     course_data = load_course_data(filepath)
     
     course_id = create_course(service, course_data['course_name'])
