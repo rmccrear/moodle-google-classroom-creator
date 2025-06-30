@@ -288,8 +288,8 @@ def import_course(filepath='temp_data/current_course.json'):
         topics_count += 1
         print(f"  Topic: {topic['name']}")
         
-        # Import assignments
-        for assignment in topic['assignments']:
+        # Import assignments in reverse order
+        for assignment in reversed(topic['assignments']):
             create_assignment(
                 service,
                 course_id,
@@ -300,8 +300,8 @@ def import_course(filepath='temp_data/current_course.json'):
             assignments_count += 1
             print(f"    Added assignment: {assignment['title']}")
         
-        # Import other activities as materials
-        for activity in topic.get('activities', []):
+        # Import other activities as materials in reverse order
+        for activity in reversed(topic.get('activities', [])):
             create_material(
                 service,
                 course_id,

@@ -87,8 +87,15 @@ def parse_mbz(mbz_path):
             
             if section_folder:
                 if folder.startswith('assign_'):
-                    # This is an assignment
-                    assignment = {'title': title.strip(), 'description': desc}
+                    # This is an assignment - store with sequence position for sorting
+                    sequence_list = section_map[section_folder]['sequence'].split(',')
+                    sequence_position = sequence_list.index(activity_id) if activity_id in sequence_list else 999
+                    assignment = {
+                        'title': title.strip(), 
+                        'description': desc,
+                        'sequence_position': sequence_position,
+                        'activity_id': activity_id
+                    }
                     section_map[section_folder]['assignments'].append(assignment)
                 else:
                     # This is another activity type (page, forum, etc.)
@@ -97,7 +104,17 @@ def parse_mbz(mbz_path):
                     activity = {'title': title.strip(), 'description': desc, 'type': folder.split('_')[0]}
                     section_map[section_folder]['activities'].append(activity)
 
-        # 4. Assign names to sections with no name
+        # 4. Sort assignments by sequence position and clean up
+        for section in sections:
+            if section['assignments']:
+                # Sort assignments by their sequence position
+                section['assignments'].sort(key=lambda x: x['sequence_position'])
+                # Remove the temporary fields used for sorting
+                for assignment in section['assignments']:
+                    del assignment['sequence_position']
+                    del assignment['activity_id']
+
+        # 5. Assign names to sections with no name
         for section in sections:
             if not section['name']:
                 # First try to use assignment titles
@@ -118,7 +135,7 @@ def parse_mbz(mbz_path):
                 else:
                     section['name'] = 'Untitled Section'
 
-        # 5. Prepare output
+        # 6. Prepare output
         output = {
             'course_name': course_name,
             'topics': [
