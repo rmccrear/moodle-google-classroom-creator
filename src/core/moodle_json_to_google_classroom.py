@@ -268,7 +268,11 @@ def import_course(filepath='course.json'):
     topics_count = 0
     assignments_count = 0
     
-    for topic in course_data['topics']:
+    # Reverse the topics order so earlier sections appear first in Google Classroom
+    # (Google Classroom displays items in reverse chronological order - newest first)
+    reversed_topics = list(reversed(course_data['topics']))
+    
+    for topic in reversed_topics:
         topic_obj = create_topic(service, course_id, topic['name'])
         topics_count += 1
         print(f"  Topic: {topic['name']}")

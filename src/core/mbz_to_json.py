@@ -37,7 +37,7 @@ def parse_mbz(mbz_path):
             xml_path = os.path.join(section_dir, folder, 'section.xml')
             tree = etree.parse(xml_path)
             section_id = tree.findtext('.//sectionid')
-            title = tree.findtext('.//title') or tree.findtext('.//summary')
+            title = tree.findtext('.//name') or tree.findtext('.//title') or tree.findtext('.//summary')
             sequence = tree.findtext('.//sequence')
             
             if title and title != '$@NULL@$':
@@ -49,41 +49,72 @@ def parse_mbz(mbz_path):
             section_sequences[folder] = sequence
             sections.append(section_map[folder])
         
-        # 3. Load assignments
+        # 3. Load assignments and other activities
         activity_dir = os.path.join(tmpdir, 'activities')
         for folder in os.listdir(activity_dir):
-            if folder.startswith('assign_'):
-                xml_path = os.path.join(activity_dir, folder, 'assign.xml')
-                if not os.path.exists(xml_path):
-                    continue
-                tree = etree.parse(xml_path)
-                title = tree.findtext('.//name')
-                desc = tree.findtext('.//intro')
-                if desc:
-                    desc = desc.strip()
+            xml_path = os.path.join(activity_dir, folder, 'assign.xml')
+            if not os.path.exists(xml_path):
+                # Try other activity types
+                if folder.startswith('page_'):
+                    xml_path = os.path.join(activity_dir, folder, 'page.xml')
+                elif folder.startswith('forum_'):
+                    xml_path = os.path.join(activity_dir, folder, 'forum.xml')
+                elif folder.startswith('resource_'):
+                    xml_path = os.path.join(activity_dir, folder, 'resource.xml')
                 else:
-                    desc = ""
+                    continue
                 
-                # Extract assignment ID from folder name (e.g., "assign_2835" -> "2835")
-                assignment_id = folder.replace('assign_', '')
+            if not os.path.exists(xml_path):
+                continue
                 
-                # Find which section contains this assignment using the sequence field
-                section_folder = None
-                for f, s in section_map.items():
-                    if s['sequence'] and assignment_id in s['sequence'].split(','):
-                        section_folder = f
-                        break
-                
-                if section_folder:
+            tree = etree.parse(xml_path)
+            title = tree.findtext('.//name')
+            desc = tree.findtext('.//intro')
+            if desc:
+                desc = desc.strip()
+            else:
+                desc = ""
+            
+            # Extract activity ID from folder name (e.g., "assign_2835" -> "2835")
+            activity_id = folder.split('_')[1]
+            
+            # Find which section contains this activity using the sequence field
+            section_folder = None
+            for f, s in section_map.items():
+                if s['sequence'] and activity_id in s['sequence'].split(','):
+                    section_folder = f
+                    break
+            
+            if section_folder:
+                if folder.startswith('assign_'):
+                    # This is an assignment
                     assignment = {'title': title.strip(), 'description': desc}
                     section_map[section_folder]['assignments'].append(assignment)
+                else:
+                    # This is another activity type (page, forum, etc.)
+                    if 'activities' not in section_map[section_folder]:
+                        section_map[section_folder]['activities'] = []
+                    activity = {'title': title.strip(), 'description': desc, 'type': folder.split('_')[0]}
+                    section_map[section_folder]['activities'].append(activity)
 
         # 4. Assign names to sections with no name
         for section in sections:
             if not section['name']:
+                # First try to use assignment titles
                 if section['assignments']:
-                    # Use the first assignment title as the section name
                     section['name'] = section['assignments'][0]['title']
+                # Then try other activity types
+                elif 'activities' in section and section['activities']:
+                    # Look for meaningful activity names
+                    meaningful_names = ['syllabus', 'course information', 'introduction', 'overview', 'important links']
+                    for activity in section['activities']:
+                        activity_title_lower = activity['title'].lower()
+                        if any(name in activity_title_lower for name in meaningful_names):
+                            section['name'] = activity['title']
+                            break
+                    # If no meaningful name found, use the first activity
+                    if not section['name']:
+                        section['name'] = section['activities'][0]['title']
                 else:
                     section['name'] = 'Untitled Section'
 
