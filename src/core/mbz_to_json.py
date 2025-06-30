@@ -132,7 +132,7 @@ def parse_mbz(mbz_path):
 
         return output
 
-def write_json(data, output_file='course.json'):
+def write_json(data, output_file='temp_data/current_course.json'):
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -169,6 +169,6 @@ if __name__ == '__main__':
     output_path = write_json_to_imports(course_data, course_data['course_name'])
     print(f"✅ Course data saved to: {output_path}")
     
-    # Also save as course.json for backward compatibility
+    # Also save as current_course.json for backward compatibility
     write_json(course_data)
-    print("✅ course.json created (for backward compatibility).")
+    print("✅ temp_data/current_course.json created (for backward compatibility).")

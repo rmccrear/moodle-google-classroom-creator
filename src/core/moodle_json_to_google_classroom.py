@@ -39,7 +39,7 @@ def get_unique_course_name(service, base_name):
         return base_name
 
 # 2. Load Course Data
-def load_course_data(filepath='course.json'):
+def load_course_data(filepath='temp_data/current_course.json'):
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
@@ -266,7 +266,7 @@ def record_course_data(course_id, course_name, topics_count, assignments_count, 
     print(f"📝 Course record saved to {courses_file}")
 
 # 7. Main Logic
-def import_course(filepath='course.json'):
+def import_course(filepath='temp_data/current_course.json'):
     # Use cached credentials
     creds = get_cached_credentials()
     service = build('classroom', 'v1', credentials=creds)
@@ -327,15 +327,21 @@ def import_course(filepath='course.json'):
 
 if __name__ == '__main__':
     import sys
-    filepath = sys.argv[1] if len(sys.argv) > 1 else 'course.json'
+    
+    # Check for test mode
+    test_mode = '--test' in sys.argv
+    if test_mode:
+        sys.argv.remove('--test')
+    
+    filepath = sys.argv[1] if len(sys.argv) > 1 else 'temp_data/current_course.json'
     
     # Test mode - just read and display the data
-    if len(sys.argv) > 2 and sys.argv[2] == '--test':
+    if test_mode:
         course_data = load_course_data(filepath)
         print(f"✅ Successfully loaded course: {course_data['course_name']}")
         print(f"📚 Found {len(course_data['topics'])} topics:")
         for topic in course_data['topics']:
-            print(f"  - {topic['name']} ({len(topic['assignments'])} assignments)")
+            print(f"  - {topic['name']} ({len(topic['assignments'])} assignments, {len(topic.get('activities', []))} activities)")
         print("✅ Script is working correctly!")
     else:
         import_course(filepath)
