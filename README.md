@@ -58,9 +58,68 @@ google-classroom-creator/
    ```
 
 3. **Set up Google API credentials**:
-   - Download `credentials.json` from Google Cloud Console
-   - Place it in the project root
-   - Add it to `.gitignore` (already included)
+   
+   ### Step 1: Access Google Cloud Console
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Sign in with your Google Workspace (formerly G Suite) account
+   - Make sure you have admin privileges or can create projects
+   
+   ### Step 2: Create or Select a Project
+   - Click on the project dropdown at the top of the page
+   - Click "New Project" or select an existing project
+   - Give your project a name (e.g., "Google Classroom Creator")
+   - Click "Create"
+   
+   ### Step 3: Enable Google Classroom API
+   - In the left sidebar, go to "APIs & Services" > "Library"
+   - Search for "Google Classroom API"
+   - Click on "Google Classroom API"
+   - Click "Enable"
+   
+   ### Step 4: Create Credentials
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth 2.0 Client IDs"
+   - If prompted, configure the OAuth consent screen:
+     - Choose "External" or "Internal" (Internal if you have Google Workspace)
+     - Fill in the required fields (App name, User support email, Developer contact)
+     - Add scopes: `https://www.googleapis.com/auth/classroom.courses`
+     - Add test users if needed
+   - For Application type, choose "Desktop application"
+   - Give it a name (e.g., "Google Classroom Creator CLI")
+   - Click "Create"
+   
+   ### Step 5: Download Credentials
+   - After creating the OAuth client, click "Download JSON"
+   - Rename the downloaded file to `credentials.json`
+   - Place it in the project root directory
+   
+   ### Step 6: Organization-Specific Setup
+   
+   **For Google Workspace Organizations:**
+   - Contact your Google Workspace admin
+   - Request access to Google Classroom API for your account
+   - The admin may need to enable the API in the Google Workspace Admin Console:
+     1. Go to [Admin Console](https://admin.google.com/)
+     2. Navigate to "Apps" > "Google Workspace" > "Google Classroom"
+     3. Ensure "Google Classroom API" is enabled
+     4. Check that your user account has the necessary permissions
+   
+   **For Personal Google Accounts:**
+   - The API should work with personal accounts
+   - You may need to verify your app in the OAuth consent screen
+   - Consider using "Internal" user type if you have a Google Workspace account
+   
+   ### Step 7: Verify Setup
+   - Run any command (e.g., `python cli.py list-courses`)
+   - Follow the browser authentication flow
+   - Grant permissions to your application
+   - Credentials will be cached for future use
+   
+   **Troubleshooting:**
+   - **"Access Denied"**: Contact your Google Workspace admin
+   - **"API not enabled"**: Ensure Google Classroom API is enabled in your project
+   - **"Invalid credentials"**: Check that `credentials.json` is in the project root
+   - **"Quota exceeded"**: Check your Google Cloud Console quotas
 
 ## 🔧 Usage
 
