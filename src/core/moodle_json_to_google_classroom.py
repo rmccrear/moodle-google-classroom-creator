@@ -220,6 +220,17 @@ def create_assignment(service, course_id, title, description, topic_id):
     }
     return service.courses().courseWork().create(courseId=course_id, body=coursework).execute()
 
+def create_material(service, course_id, title, description, topic_id):
+    # Convert description HTML to supported format
+    description = convert_html_for_classroom(description)
+    material = {
+        'title': title,
+        'description': description,
+        'state': 'PUBLISHED',
+        'topicId': topic_id
+    }
+    return service.courses().courseWorkMaterials().create(courseId=course_id, body=material).execute()
+
 # 6. Record Course Data
 def record_course_data(course_id, course_name, topics_count, assignments_count, source_file):
     # Ensure class_data directory exists
@@ -276,6 +287,8 @@ def import_course(filepath='course.json'):
         topic_obj = create_topic(service, course_id, topic['name'])
         topics_count += 1
         print(f"  Topic: {topic['name']}")
+        
+        # Import assignments
         for assignment in topic['assignments']:
             create_assignment(
                 service,
@@ -286,6 +299,18 @@ def import_course(filepath='course.json'):
             )
             assignments_count += 1
             print(f"    Added assignment: {assignment['title']}")
+        
+        # Import other activities as materials
+        for activity in topic.get('activities', []):
+            create_material(
+                service,
+                course_id,
+                activity['title'],
+                activity['description'],
+                topic_obj['topicId']
+            )
+            assignments_count += 1
+            print(f"    Added material: {activity['title']}")
     
     # Record the course data
     record_course_data(

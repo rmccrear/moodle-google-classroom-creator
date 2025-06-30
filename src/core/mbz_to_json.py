@@ -122,7 +122,11 @@ def parse_mbz(mbz_path):
         output = {
             'course_name': course_name,
             'topics': [
-                {'name': s['name'], 'assignments': s['assignments']} for s in sections if s['assignments'] or s['name']
+                {
+                    'name': s['name'], 
+                    'assignments': s['assignments'],
+                    'activities': s.get('activities', [])  # Include other activities
+                } for s in sections if s['assignments'] or s.get('activities') or s['name']
             ]
         }
 
